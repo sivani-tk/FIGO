@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Eye, EyeOff, Mail, Lock, User, ArrowRight, Chrome } from 'lucide-react'
+import { Eye, EyeOff, Mail, Lock, User, ArrowRight, Globe2 } from 'lucide-react'
 import { FigoLogo } from '@/components/ui/FigoLogo'
 import { useAuthStore } from '@/store/useAuthStore'
 import { loginWithEmail, signupWithEmail, loginWithGoogle, sendPasswordReset } from '@/services/auth.service'
@@ -316,7 +316,7 @@ export default function SplashPage() {
                     disabled={isLoading}
                     className="w-full flex items-center justify-center gap-3 py-3 rounded-2xl text-sm font-semibold text-highlight transition-all duration-200 hover:bg-white/15 border border-white/15 bg-white/8 disabled:opacity-50"
                   >
-                    <Chrome size={18} className="text-blue-400" />
+                    <Globe2 size={18} className="text-blue-400" />
                     Continue with Google
                   </motion.button>
 
@@ -424,7 +424,7 @@ export default function SplashPage() {
                     disabled={isLoading}
                     className="w-full flex items-center justify-center gap-3 py-3 rounded-2xl text-sm font-semibold text-highlight transition-all duration-200 hover:bg-white/15 border border-white/15 bg-white/8 disabled:opacity-50"
                   >
-                    <Chrome size={18} className="text-blue-400" />
+                    <Globe2 size={18} className="text-blue-400" />
                     Continue with Google
                   </motion.button>
 
