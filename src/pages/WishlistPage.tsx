@@ -156,12 +156,13 @@ export default function WishlistPage() {
     return matchesFilter && matchesSearch
   })
 
-  const types: { id: FilterType; label: string; count: number }[] = [
-    { id: 'all', label: 'All', count: items.length },
-    { id: 'trip', label: 'Trips', count: items.filter((i) => i.type === 'trip').length },
-    { id: 'destination', label: 'Destinations', count: items.filter((i) => i.type === 'destination').length },
-    { id: 'attraction', label: 'Attractions', count: items.filter((i) => i.type === 'attraction').length },
-  ].filter((t) => t.id === 'all' || t.count > 0)
+  const allTypes: { id: FilterType; label: string; count: number }[] = [
+    { id: 'all' as FilterType, label: 'All', count: items.length },
+    { id: 'trip' as FilterType, label: 'Trips', count: items.filter((i) => i.type === 'trip').length },
+    { id: 'destination' as FilterType, label: 'Destinations', count: items.filter((i) => i.type === 'destination').length },
+    { id: 'attraction' as FilterType, label: 'Attractions', count: items.filter((i) => i.type === 'attraction').length },
+  ]
+  const types = allTypes.filter((t) => t.id === 'all' || t.count > 0)
 
   function handleViewTrip(item: WishlistItem) {
     if (item.type !== 'trip') return

@@ -544,7 +544,7 @@ export default function ResultPage() {
                         <Cell key={index} fill={BUDGET_COLORS[index % BUDGET_COLORS.length]} />
                       ))}
                     </Pie>
-                    <Tooltip formatter={(value: number) => formatINR(value)} contentStyle={{ background: 'rgba(47,65,86,0.95)', border: '1px solid rgba(200,217,230,0.2)', borderRadius: 12, color: '#F5EFEB' }} />
+                    <Tooltip formatter={(value) => formatINR(Number(value))} contentStyle={{ background: 'rgba(47,65,86,0.95)', border: '1px solid rgba(200,217,230,0.2)', borderRadius: 12, color: '#F5EFEB' }} />
                   </PieChart>
                 </ResponsiveContainer>
               </div>
