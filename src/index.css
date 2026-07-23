@@ -65,16 +65,16 @@
 @layer components {
   /* ---- Glassmorphism ---- */
   .glass {
-    @apply bg-white/5 backdrop-blur-xl border border-white/10 shadow-glass;
+   @apply bg-white/5 backdrop-blur-xl border border-white/10 shadow-lg;
   }
   .glass-card {
-    @apply bg-white/8 backdrop-blur-2xl border border-white/15 shadow-glass-lg rounded-3xl;
+    @apply bg-white/10 backdrop-blur-2xl border border-white/20 shadow-lg rounded-3xl;
   }
   .glass-dark {
-    @apply bg-primary-800/70 backdrop-blur-2xl border border-white/10 shadow-glass;
+    @apply bg-primary-800/70 backdrop-blur-2xl border border-white/10 shadow-lg;
   }
   .glass-light {
-    @apply bg-white/90 backdrop-blur-2xl border border-white/50 shadow-glass;
+   @apply bg-white/90 backdrop-blur-2xl border border-white/50 shadow-lg;
   }
 
   /* ---- Premium Card ---- */
