@@ -25,6 +25,7 @@ const defaultSettings: AppSettings = {
   notifications: true,
   privacyMode: false,
   locationSharing: true,
+  travelStyle: 'solo',
 }
 
 export const useUIStore = create<UIStore>()(

@@ -80,6 +80,7 @@ export interface Activity {
   }
   period: 'morning' | 'afternoon' | 'evening' | 'night'
   category: string
+  day?: number  // which day (1-indexed) in multi-day itinerary
 }
 
 export interface BudgetBreakdown {

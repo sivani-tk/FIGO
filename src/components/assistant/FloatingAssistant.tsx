@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Sparkles, X, Send, Bot, User, Loader2 } from 'lucide-react'
+import axios from 'axios'
 import { useUIStore } from '@/store/useUIStore'
 import { useTripStore } from '@/store/useTripStore'
 import type { ChatMessage } from '@/types'
@@ -9,7 +10,7 @@ function uuid() {
   return Math.random().toString(36).slice(2) + Date.now().toString(36)
 }
 
-// Smart mock AI responses based on trip context
+// ─── Mock fallback responses ──────────────────────────────────
 function generateResponse(question: string, destination?: string, budget?: number): string {
   const q = question.toLowerCase()
   const dest = destination ?? 'your destination'
@@ -43,13 +44,33 @@ function generateResponse(question: string, destination?: string, budget?: numbe
     return `Cultural tips for ${dest}:\n• Research local customs before you go\n• Dress modestly at religious sites\n• Learn basic greetings in the local language\n• Ask permission before photographing locals\n• Tipping customs vary — research beforehand\n• Remove shoes when entering homes/temples\n• Respect local dining customs\n\nBeing culturally aware makes travel more meaningful! 🤝`
   }
 
-  // Generic helpful response
   const tips = [
     `Great question about ${dest}! Here are some insider tips:\n• Book popular attractions in advance to skip queues\n• Visit famous spots early morning or late afternoon\n• Check Google Maps reviews for hidden gems\n• Download offline maps before you go\n• Connect with locals on travel forums for authentic advice\n\nIs there something more specific I can help with? 😊`,
     `For your trip to ${dest}:\n• The best experiences often aren't in tourist guides\n• Learn 5-10 words in the local language — locals appreciate it!\n• Take a free walking tour on your first day\n• Try the local breakfast instead of hotel food\n• Check if your destination has any upcoming festivals\n\nWhat else can I help you plan? ✨`,
     `Here's what I know about ${dest}:\n• Check visa requirements well in advance\n• Travel insurance is strongly recommended\n• Save important contacts as offline notes\n• Keep digital and physical copies of your passport\n• Register with your embassy if staying long-term\n\nAny specific concerns I can address? 🌍`,
   ]
   return tips[Math.floor(Math.random() * tips.length)]
+}
+
+// ─── OpenAI API call ──────────────────────────────────────────
+async function callOpenAI(messages: { role: 'system' | 'user' | 'assistant'; content: string }[]): Promise<string> {
+  const apiKey = import.meta.env.VITE_OPENAI_API_KEY
+  if (!apiKey) throw new Error('No API key')
+
+  const { data } = await axios.post(
+    'https://api.openai.com/v1/chat/completions',
+    {
+      model: 'gpt-4o-mini',
+      messages,
+      temperature: 0.8,
+      max_tokens: 600,
+    },
+    {
+      headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+      timeout: 20000,
+    }
+  )
+  return data.choices[0].message.content
 }
 
 const QUICK_SUGGESTIONS = [
@@ -101,19 +122,36 @@ export function FloatingAssistant() {
     setInput('')
     setIsTyping(true)
 
-    // Simulate AI thinking
-    await new Promise((r) => setTimeout(r, 900 + Math.random() * 800))
+    let responseText: string
 
-    const response = generateResponse(
-      text,
-      currentTrip?.destination,
-      currentTrip?.estimatedBudget
-    )
+    try {
+      // Build conversation history for OpenAI
+      const systemPrompt = `You are FIGO, an expert AI travel assistant. ${
+        currentTrip
+          ? `The user is planning a trip to ${currentTrip.destination}. Budget: ₹${currentTrip.estimatedBudget.toLocaleString()}. Trip summary: ${currentTrip.summary.slice(0, 200)}`
+          : 'Help the user plan their perfect trip.'
+      } Give concise, practical, friendly advice. Use bullet points and emoji for readability. Keep responses under 150 words.`
+
+      const conversationHistory = messages
+        .filter((m) => m.role !== 'assistant' || messages.indexOf(m) > 0)
+        .slice(-8) // Last 8 messages for context
+        .map((m) => ({ role: m.role as 'user' | 'assistant', content: m.content }))
+
+      responseText = await callOpenAI([
+        { role: 'system', content: systemPrompt },
+        ...conversationHistory,
+        { role: 'user', content: text.trim() },
+      ])
+    } catch {
+      // Fall back to simulated delay + mock response
+      await new Promise((r) => setTimeout(r, 900 + Math.random() * 600))
+      responseText = generateResponse(text, currentTrip?.destination, currentTrip?.estimatedBudget)
+    }
 
     const assistantMsg: ChatMessage = {
       id: uuid(),
       role: 'assistant',
-      content: response,
+      content: responseText,
       timestamp: new Date().toISOString(),
     }
 

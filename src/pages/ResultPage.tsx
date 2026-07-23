@@ -1,11 +1,12 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   ArrowLeft, RefreshCw, Heart, Share2, Download, MapPin, Clock, DollarSign,
   ChevronDown, ChevronUp, Star, Navigation, Lightbulb, Shield, Package, Users,
-  Utensils, Car, Zap
+  Utensils, Car, Zap, Copy, CheckCircle2,
 } from 'lucide-react'
+import L from 'leaflet'
 import { useTripStore } from '@/store/useTripStore'
 import { useWishlistStore } from '@/store/useWishlistStore'
 import { useUIStore } from '@/store/useUIStore'
@@ -25,6 +26,7 @@ const PERIOD_COLORS = {
 
 const BUDGET_COLORS = ['#C8D9E6', '#567C8D', '#2F4156', '#F5EFEB', '#a0bbd0', '#748FA0']
 
+// ─── Activity Card ────────────────────────────────────────────
 function ActivityCard({ activity, index }: { activity: Activity; index: number }) {
   const [expanded, setExpanded] = useState(false)
   const colors = PERIOD_COLORS[activity.period]
@@ -33,7 +35,7 @@ function ActivityCard({ activity, index }: { activity: Activity; index: number }
     <motion.div
       initial={{ opacity: 0, x: -20 }}
       animate={{ opacity: 1, x: 0 }}
-      transition={{ delay: index * 0.08 }}
+      transition={{ delay: index * 0.06 }}
       className="relative pl-12"
     >
       {/* Timeline dot */}
@@ -51,6 +53,9 @@ function ActivityCard({ activity, index }: { activity: Activity; index: number }
               <div className="flex items-center gap-2 mb-1">
                 <span className="text-accent/60 text-xs font-medium">{colors.label} {activity.time}</span>
                 <span className="badge text-xs">{activity.category}</span>
+                {activity.day && (
+                  <span className="text-accent/40 text-xs font-medium">Day {activity.day}</span>
+                )}
               </div>
               <h3 className="text-highlight font-bold text-base leading-snug">{activity.title}</h3>
               <p className="text-accent/70 text-sm mt-1 line-clamp-2">{activity.description}</p>
@@ -93,20 +98,15 @@ function ActivityCard({ activity, index }: { activity: Activity; index: number }
               className="overflow-hidden"
             >
               <div className="px-4 pb-4 border-t border-white/10 pt-4 space-y-3">
-                {/* Transport */}
                 <div className="flex items-center gap-2 text-sm">
                   <Car size={14} className="text-accent/60" />
                   <span className="text-accent/60">Transportation:</span>
                   <span className="text-highlight capitalize">{activity.transportation}</span>
                 </div>
-
-                {/* Location */}
                 <div className="flex items-center gap-2 text-sm">
                   <MapPin size={14} className="text-accent/60" />
                   <span className="text-highlight text-xs">{activity.location.address}</span>
                 </div>
-
-                {/* Tips */}
                 {activity.tips.length > 0 && (
                   <div>
                     <p className="flex items-center gap-1.5 text-xs font-semibold text-accent/70 mb-2">
@@ -130,13 +130,96 @@ function ActivityCard({ activity, index }: { activity: Activity; index: number }
   )
 }
 
+// ─── Activity Map ─────────────────────────────────────────────
+function ActivityMap({ activities }: { activities: Activity[] }) {
+  const mapRef = useRef<HTMLDivElement>(null)
+  const mapInstanceRef = useRef<L.Map | null>(null)
+
+  useEffect(() => {
+    if (!mapRef.current || mapInstanceRef.current || activities.length === 0) return
+
+    const center: [number, number] = [activities[0].location.lat, activities[0].location.lng]
+    const map = L.map(mapRef.current, {
+      center,
+      zoom: 13,
+      zoomControl: true,
+      scrollWheelZoom: false,
+    })
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap contributors',
+      maxZoom: 19,
+    }).addTo(map)
+
+    const periodEmojis: Record<string, string> = {
+      morning: '🌅', afternoon: '☀️', evening: '🌆', night: '🌙',
+    }
+    const periodColors: Record<string, string> = {
+      morning: '#fde68a', afternoon: '#86efac', evening: '#c4b5fd', night: '#93c5fd',
+    }
+
+    const bounds: L.LatLng[] = []
+
+    activities.forEach((activity, idx) => {
+      const { lat, lng } = activity.location
+      const color = periodColors[activity.period] ?? '#C8D9E6'
+      const emoji = periodEmojis[activity.period] ?? '📍'
+      const dayLabel = activity.day ? `Day ${activity.day} · ` : ''
+
+      const markerHtml = `
+        <div style="
+          width: 36px; height: 36px; border-radius: 50%;
+          background: linear-gradient(135deg, ${color}cc, ${color}88);
+          border: 2px solid ${color};
+          display: flex; align-items: center; justify-content: center;
+          font-size: 16px;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.3), 0 0 0 4px ${color}33;
+        ">${emoji}</div>
+      `
+      const icon = L.divIcon({ html: markerHtml, iconSize: [36, 36], iconAnchor: [18, 18], className: '' })
+      const marker = L.marker([lat, lng], { icon }).addTo(map)
+      marker.bindPopup(
+        `<div style="font-family: 'Inter', sans-serif; min-width: 160px;">
+          <p style="color: #2F4156; font-weight: 700; font-size: 13px; margin: 0 0 4px;">${idx + 1}. ${activity.title}</p>
+          <p style="color: #567C8D; font-size: 11px; margin: 0 0 2px;">${dayLabel}${activity.time}</p>
+          <p style="color: #567C8D; font-size: 11px; margin: 0;">${formatINR(activity.estimatedCost)} · ${activity.duration}</p>
+        </div>`,
+        { closeButton: false }
+      )
+      bounds.push(L.latLng(lat, lng))
+    })
+
+    if (bounds.length > 1) {
+      map.fitBounds(L.latLngBounds(bounds), { padding: [30, 30] })
+    }
+
+    mapInstanceRef.current = map
+    return () => {
+      map.remove()
+      mapInstanceRef.current = null
+    }
+  }, [activities])
+
+  return (
+    <div
+      ref={mapRef}
+      className="w-full rounded-3xl overflow-hidden"
+      style={{ height: 380, border: '1px solid rgba(200,217,230,0.15)' }}
+      id="result-activity-map"
+    />
+  )
+}
+
+// ─── Main Page ────────────────────────────────────────────────
 export default function ResultPage() {
   const navigate = useNavigate()
   const { currentTrip, saveTrip, setGenerating, setCurrentTrip, searchParams } = useTripStore()
   const { addItem, hasItem, removeItem } = useWishlistStore()
   const { toggleAssistant } = useUIStore()
-  const [activeSection, setActiveSection] = useState<'timeline' | 'budget' | 'tips'>('timeline')
+  const [activeSection, setActiveSection] = useState<'timeline' | 'budget' | 'tips' | 'map'>('timeline')
   const [activePeriod, setActivePeriod] = useState<string | null>(null)
+  const [activeDay, setActiveDay] = useState<number | null>(null)
+  const [copied, setCopied] = useState(false)
 
   if (!currentTrip) {
     return (
@@ -151,6 +234,10 @@ export default function ResultPage() {
 
   const trip = currentTrip
   const isSaved = hasItem(trip.id)
+
+  // Compute unique days for filter
+  const uniqueDays = [...new Set(trip.timeline.map((a) => a.day).filter(Boolean))] as number[]
+  const isMultiDay = uniqueDays.length > 1
 
   function handleSave() {
     if (isSaved) removeItem(trip.id)
@@ -172,9 +259,112 @@ export default function ResultPage() {
     } finally { setGenerating(false) }
   }
 
-  const filteredTimeline = activePeriod
-    ? trip.timeline.filter((a) => a.period === activePeriod)
-    : trip.timeline
+  async function handleShare() {
+    const shareText = `🌍 FIGO Trip: ${trip.destination}\n\n${trip.summary}\n\nBudget: ${formatINR(trip.estimatedBudget)} · ${trip.totalTime}\n\nPlan your trip at FIGO!`
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: `FIGO: ${trip.destination}`, text: shareText })
+        return
+      } catch { /* fallthrough */ }
+    }
+    // Fallback: copy to clipboard
+    try {
+      await navigator.clipboard.writeText(shareText)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2500)
+    } catch { /* ignore */ }
+  }
+
+  function handleDownload() {
+    const lines: string[] = [
+      `═══════════════════════════════════════════`,
+      `  FIGO TRAVEL ITINERARY`,
+      `  ${trip.destination.toUpperCase()}`,
+      `═══════════════════════════════════════════`,
+      ``,
+      `📋 SUMMARY`,
+      trip.summary,
+      ``,
+      `📊 TRIP OVERVIEW`,
+      `  • Duration:  ${trip.totalTime}`,
+      `  • Distance:  ${trip.totalDistance}`,
+      `  • Budget:    ${formatINR(trip.estimatedBudget)}`,
+      `  • Weather:   ${trip.weather.temperature}°C, ${trip.weather.condition}`,
+      ``,
+      `🗓️ ITINERARY`,
+      ``,
+    ]
+
+    // Group by day
+    const byDay: Record<number, Activity[]> = {}
+    trip.timeline.forEach((act) => {
+      const d = act.day ?? 1
+      if (!byDay[d]) byDay[d] = []
+      byDay[d].push(act)
+    })
+
+    Object.entries(byDay).forEach(([day, acts]) => {
+      lines.push(`── DAY ${day} ──────────────────────────────────`)
+      acts.forEach((act) => {
+        lines.push(``)
+        lines.push(`  ${act.time}  ${act.period.toUpperCase()} · ${act.category}`)
+        lines.push(`  📍 ${act.title}`)
+        lines.push(`  ${act.description}`)
+        lines.push(`  ⏱  ${act.duration}  |  🚗 ${act.travelTime} travel  |  💰 ${formatINR(act.estimatedCost)}`)
+        lines.push(`  📌 ${act.location.address}`)
+        if (act.tips.length) {
+          lines.push(`  💡 Tips: ${act.tips.join(' · ')}`)
+        }
+      })
+      lines.push(``)
+    })
+
+    lines.push(``)
+    lines.push(`💰 BUDGET BREAKDOWN`)
+    lines.push(`  Food:          ${formatINR(trip.budgetBreakdown.food)}`)
+    lines.push(`  Transport:     ${formatINR(trip.budgetBreakdown.transport)}`)
+    lines.push(`  Activities:    ${formatINR(trip.budgetBreakdown.activities)}`)
+    lines.push(`  Shopping:      ${formatINR(trip.budgetBreakdown.shopping)}`)
+    lines.push(`  Accommodation: ${formatINR(trip.budgetBreakdown.accommodation)}`)
+    lines.push(`  Emergency:     ${formatINR(trip.budgetBreakdown.emergency)}`)
+    lines.push(`  ─────────────────────────────────────────`)
+    lines.push(`  TOTAL:         ${formatINR(trip.estimatedBudget)}`)
+    lines.push(``)
+    lines.push(`🎒 PACKING TIPS`)
+    trip.packingTips.forEach((t) => lines.push(`  • ${t}`))
+    lines.push(``)
+    lines.push(`🛡️ SAFETY TIPS`)
+    trip.safetyTips.forEach((t) => lines.push(`  • ${t}`))
+    lines.push(``)
+    lines.push(`🚨 EMERGENCY CONTACTS — ${trip.emergencyInfo.country}`)
+    lines.push(`  Police:    ${trip.emergencyInfo.police}`)
+    lines.push(`  Ambulance: ${trip.emergencyInfo.ambulance}`)
+    lines.push(`  Fire:      ${trip.emergencyInfo.fire}`)
+    if (trip.emergencyInfo.touristPolice) {
+      lines.push(`  Tourist:   ${trip.emergencyInfo.touristPolice}`)
+    }
+    lines.push(``)
+    lines.push(`═══════════════════════════════════════════`)
+    lines.push(`  Generated by FIGO — Every Journey Starts Here`)
+    lines.push(`  ${new Date().toLocaleDateString('en', { dateStyle: 'long' })}`)
+    lines.push(`═══════════════════════════════════════════`)
+
+    const content = lines.join('\n')
+    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `FIGO-${trip.destination.replace(/\s+/g, '-')}-Itinerary.txt`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+  }
+
+  // Filtered timeline
+  let filteredTimeline = trip.timeline
+  if (activePeriod) filteredTimeline = filteredTimeline.filter((a) => a.period === activePeriod)
+  if (activeDay !== null) filteredTimeline = filteredTimeline.filter((a) => a.day === activeDay)
 
   const budgetData = [
     { name: 'Food', value: trip.budgetBreakdown.food },
@@ -195,13 +385,11 @@ export default function ResultPage() {
           className="w-full h-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-b from-primary-900/40 via-transparent to-primary-900" />
 
-        {/* Back button */}
         <button onClick={() => navigate('/home')}
           className="absolute top-20 left-4 p-2.5 rounded-2xl bg-black/30 backdrop-blur-sm text-white hover:bg-black/50 transition-all">
           <ArrowLeft size={20} />
         </button>
 
-        {/* Destination title */}
         <div className="absolute bottom-6 left-6 right-6">
           <h1 className="font-display font-black text-3xl md:text-4xl text-white mb-1" style={{ letterSpacing: '-0.03em' }}>
             {trip.destination}
@@ -232,24 +420,40 @@ export default function ResultPage() {
         </div>
 
         {/* Section tabs */}
-        <div className="flex gap-2 mb-4">
-          {['timeline', 'budget', 'tips'].map((s) => (
+        <div className="flex gap-2 mb-4 overflow-x-auto no-scrollbar">
+          {(['timeline', 'map', 'budget', 'tips'] as const).map((s) => (
             <button
               key={s}
-              onClick={() => setActiveSection(s as typeof activeSection)}
-              className={`flex-1 py-2.5 rounded-2xl text-sm font-semibold capitalize transition-all ${
+              onClick={() => setActiveSection(s)}
+              className={`flex-shrink-0 flex-1 py-2.5 rounded-2xl text-sm font-semibold capitalize transition-all ${
                 activeSection === s ? 'bg-secondary/40 text-highlight border border-secondary/60' : 'bg-white/5 text-accent/60 border border-white/10 hover:bg-white/10'
               }`}
             >
-              {s === 'timeline' ? '📋' : s === 'budget' ? '💰' : '💡'} {s}
+              {s === 'timeline' ? '📋' : s === 'map' ? '🗺️' : s === 'budget' ? '💰' : '💡'} {s}
             </button>
           ))}
         </div>
 
-        {/* TIMELINE */}
+        {/* ── TIMELINE ── */}
         {activeSection === 'timeline' && (
           <div>
-            {/* Period filters */}
+            {/* Day filter (multi-day only) */}
+            {isMultiDay && (
+              <div className="flex gap-2 mb-3 overflow-x-auto no-scrollbar">
+                <button onClick={() => setActiveDay(null)}
+                  className={`flex-shrink-0 px-4 py-2 rounded-xl text-xs font-semibold transition-all ${activeDay === null ? 'bg-secondary/40 text-highlight border border-secondary/60' : 'bg-white/5 text-accent/60 border border-white/10'}`}>
+                  All Days
+                </button>
+                {uniqueDays.map((d) => (
+                  <button key={d} onClick={() => setActiveDay(activeDay === d ? null : d)}
+                    className={`flex-shrink-0 px-4 py-2 rounded-xl text-xs font-semibold transition-all ${activeDay === d ? 'bg-secondary/40 text-highlight border border-secondary/60' : 'bg-white/5 text-accent/60 border border-white/10'}`}>
+                    Day {d}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* Period filter */}
             <div className="flex gap-2 mb-4 overflow-x-auto no-scrollbar">
               <button onClick={() => setActivePeriod(null)}
                 className={`flex-shrink-0 px-4 py-2 rounded-xl text-xs font-semibold transition-all ${!activePeriod ? 'bg-secondary/40 text-highlight border border-secondary/60' : 'bg-white/5 text-accent/60 border border-white/10'}`}>
@@ -263,20 +467,70 @@ export default function ResultPage() {
               ))}
             </div>
 
-            {/* Timeline connector */}
             <div className="relative">
               <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-gradient-to-b from-secondary/50 to-transparent" />
-              {filteredTimeline.map((activity, i) => (
-                <ActivityCard key={activity.id} activity={activity} index={i} />
-              ))}
+              {filteredTimeline.length === 0 ? (
+                <div className="text-center py-12 text-accent/50 text-sm">No activities match the filter</div>
+              ) : (
+                filteredTimeline.map((activity, i) => (
+                  <ActivityCard key={activity.id} activity={activity} index={i} />
+                ))
+              )}
             </div>
           </div>
         )}
 
-        {/* BUDGET */}
+        {/* ── MAP ── */}
+        {activeSection === 'map' && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
+            <div className="glass-card p-5">
+              <h3 className="text-highlight font-bold mb-3 flex items-center gap-2">
+                <MapPin size={16} className="text-secondary" /> Activity Locations
+                <span className="text-accent/50 text-xs font-normal ml-1">({trip.timeline.length} pins)</span>
+              </h3>
+              <div className="flex flex-wrap gap-2 mb-4">
+                {Object.entries(PERIOD_COLORS).map(([period, { dot, label }]) => (
+                  <span key={period} className="flex items-center gap-1.5 text-xs text-accent/60">
+                    <span className="w-3 h-3 rounded-full inline-block flex-shrink-0" style={{ background: dot }} />
+                    {label} {period}
+                  </span>
+                ))}
+              </div>
+              <ActivityMap activities={trip.timeline} />
+            </div>
+
+            {/* Activity list with coordinates */}
+            <div className="glass-card p-5">
+              <h3 className="text-highlight font-bold mb-3 flex items-center gap-2">
+                <Navigation size={16} className="text-secondary" /> All Stops
+              </h3>
+              <div className="space-y-2">
+                {trip.timeline.map((act, i) => {
+                  const colors = PERIOD_COLORS[act.period]
+                  return (
+                    <div key={act.id} className="flex items-center gap-3 py-2.5 border-b border-white/6 last:border-0">
+                      <div className="w-7 h-7 rounded-full flex-shrink-0 flex items-center justify-center text-xs font-bold text-primary-900"
+                        style={{ background: colors.dot }}>
+                        {i + 1}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-highlight text-sm font-semibold truncate">{act.title}</p>
+                        <p className="text-accent/50 text-xs mt-0.5">
+                          {act.day ? `Day ${act.day} · ` : ''}{act.time} · {act.duration}
+                        </p>
+                      </div>
+                      <span className="text-accent/40 text-xs flex-shrink-0">{formatINR(act.estimatedCost)}</span>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          </motion.div>
+        )}
+
+        {/* ── BUDGET ── */}
         {activeSection === 'budget' && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-            {/* Pie chart */}
             <div className="glass-card p-5 mb-4">
               <h3 className="text-highlight font-bold mb-4 flex items-center gap-2">
                 <DollarSign size={16} /> Budget Breakdown
@@ -295,7 +549,6 @@ export default function ResultPage() {
                 </ResponsiveContainer>
               </div>
 
-              {/* Budget legend */}
               <div className="grid grid-cols-2 gap-2 mt-2">
                 {budgetData.map(({ name, value }, i) => (
                   <div key={name} className="flex items-center gap-2">
@@ -309,7 +562,6 @@ export default function ResultPage() {
               </div>
             </div>
 
-            {/* Total */}
             <div className="glass-card p-4 mb-4 flex items-center justify-between">
               <div className="flex items-center gap-2 text-accent/70">
                 <Zap size={16} /> <span>Total Estimated Budget</span>
@@ -317,7 +569,6 @@ export default function ResultPage() {
               <span className="text-highlight font-black text-xl">{formatINR(trip.estimatedBudget)}</span>
             </div>
 
-            {/* Emergency contacts */}
             <div className="glass-card p-5">
               <h3 className="text-highlight font-bold mb-3 flex items-center gap-2">
                 <Shield size={16} /> Emergency Contacts
@@ -335,11 +586,25 @@ export default function ResultPage() {
                   </a>
                 ))}
               </div>
+              {trip.emergencyInfo.touristPolice && (
+                <a href={`tel:${trip.emergencyInfo.touristPolice}`}
+                  className="mt-3 flex items-center justify-between p-3 rounded-2xl hover:bg-white/5 transition-all"
+                  style={{ background: 'rgba(86,124,141,0.1)', border: '1px solid rgba(86,124,141,0.2)' }}>
+                  <div className="flex items-center gap-2.5">
+                    <span className="text-lg">👮</span>
+                    <div>
+                      <p className="text-highlight text-sm font-semibold">Tourist Police</p>
+                      <p className="text-accent/50 text-xs">Specialised tourist assistance</p>
+                    </div>
+                  </div>
+                  <span className="text-secondary font-bold text-sm">{trip.emergencyInfo.touristPolice}</span>
+                </a>
+              )}
             </div>
           </motion.div>
         )}
 
-        {/* TIPS */}
+        {/* ── TIPS ── */}
         {activeSection === 'tips' && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
             {[
@@ -374,18 +639,36 @@ export default function ResultPage() {
               <Heart size={16} className={isSaved ? 'fill-current' : ''} />
               {isSaved ? 'Saved!' : 'Save Trip'}
             </motion.button>
-            <motion.button whileTap={{ scale: 0.95 }}
-              onClick={() => { if (navigator.share) navigator.share({ title: `FIGO: ${trip.destination}`, text: trip.summary }) }}
-              className="p-3 rounded-2xl text-accent/70 hover:text-highlight hover:bg-white/10 transition-all border border-white/10">
-              <Share2 size={16} />
+            <motion.button whileTap={{ scale: 0.95 }} onClick={handleShare}
+              className="p-3 rounded-2xl text-accent/70 hover:text-highlight hover:bg-white/10 transition-all border border-white/10"
+              title={copied ? 'Copied!' : 'Share'}>
+              {copied ? <CheckCircle2 size={16} className="text-green-400" /> : <Share2 size={16} />}
             </motion.button>
-            <motion.button whileTap={{ scale: 0.95 }}
-              className="p-3 rounded-2xl text-accent/70 hover:text-highlight hover:bg-white/10 transition-all border border-white/10">
+            <motion.button whileTap={{ scale: 0.95 }} onClick={handleDownload}
+              id="download-trip-btn"
+              className="p-3 rounded-2xl text-accent/70 hover:text-highlight hover:bg-white/10 transition-all border border-white/10"
+              title="Download itinerary">
               <Download size={16} />
             </motion.button>
           </div>
         </div>
       </div>
+
+      {/* Clipboard toast */}
+      <AnimatePresence>
+        {copied && (
+          <motion.div
+            initial={{ opacity: 0, y: 20, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.9 }}
+            className="fixed bottom-36 md:bottom-20 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 px-5 py-3 rounded-2xl"
+            style={{ background: 'rgba(34,197,94,0.15)', border: '1px solid rgba(34,197,94,0.3)', backdropFilter: 'blur(12px)' }}
+          >
+            <Copy size={14} className="text-green-400" />
+            <span className="text-green-300 text-sm font-semibold">Copied to clipboard!</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Floating AI Assistant */}
       <FloatingAssistant />
