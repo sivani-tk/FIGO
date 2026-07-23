@@ -6,6 +6,7 @@ import { useWishlistStore } from '@/store/useWishlistStore'
 import { useTripStore } from '@/store/useTripStore'
 import { Navbar } from '@/components/layout/Navbar'
 import { timeAgo } from '@/utils'
+import { useTranslation } from '@/i18n/translations'
 import type { WishlistItem } from '@/types'
 
 type FilterType = 'all' | 'trip' | 'destination' | 'attraction' | 'restaurant'

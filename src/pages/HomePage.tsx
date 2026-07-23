@@ -15,6 +15,7 @@ import { Navbar } from '@/components/layout/Navbar'
 import { generateTrip } from '@/services/ai.service'
 import { formatINR, getBudgetCategory } from '@/services/currency.service'
 import { CURRENCIES } from '@/services/currency.service'
+import { useTranslation } from '@/i18n/translations'
 import type { TripSearchParams, TravelStyle, Interest, TransportMode, Currency, Language } from '@/types'
 
 const LANGUAGES: { code: Language; label: string }[] = [
@@ -63,6 +64,7 @@ export default function HomePage() {
   const { setSearchParams, setCurrentTrip, setGenerating } = useTripStore()
   const { settings } = useUIStore()
   const { location } = useGPS()
+  const { t } = useTranslation()
 
   const [destination, setDestination] = useState('')
   const [budgetMin, setBudgetMin] = useState(5000)
@@ -151,11 +153,11 @@ export default function HomePage() {
             </motion.div>
           )}
           <h1 className="font-display font-black text-4xl md:text-5xl text-highlight mb-3" style={{ letterSpacing: '-0.03em' }}>
-            Every Journey<br />
-            <span className="text-gradient">Starts Here</span>
+            {t('home.title')}<br />
+            <span className="text-gradient">{t('home.title2')}</span>
           </h1>
           <p className="text-accent/70 text-base leading-relaxed max-w-sm mx-auto">
-            Let AI craft the perfect itinerary based on your travel style, budget and preferences.
+            {t('home.subtitle')}
           </p>
         </motion.div>
 
@@ -181,7 +183,7 @@ export default function HomePage() {
         >
           {/* Destination input */}
           <div className="p-5 pb-0">
-            <label className="text-accent/60 text-xs font-semibold uppercase tracking-wider mb-2 block">Where to?</label>
+            <label className="text-accent/60 text-xs font-semibold uppercase tracking-wider mb-2 block">{t('home.where')}</label>
             <div className="relative">
               <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-accent/50" />
               <input
@@ -190,7 +192,7 @@ export default function HomePage() {
                 onChange={(e) => { setDestination(e.target.value); setShowSuggestions(true) }}
                 onFocus={() => setShowSuggestions(true)}
                 onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
-                placeholder="Paris, Tokyo, Dubai..."
+                placeholder={t('home.placeholder')}
                 className="w-full bg-white/5 border border-white/15 text-highlight placeholder-white/30 rounded-2xl px-4 py-4 pl-11 text-lg font-medium outline-none focus:border-secondary/60 focus:bg-white/10 transition-all"
                 id="destination-input"
                 aria-label="Destination"
@@ -238,7 +240,7 @@ export default function HomePage() {
             <div>
               <div className="flex items-center justify-between mb-2">
                 <label className="text-accent/60 text-xs font-semibold uppercase tracking-wider flex items-center gap-1.5">
-                  <Wallet size={12} /> Budget Range
+                  <Wallet size={12} /> {t('home.budget')}
                 </label>
                 <div className="flex items-center gap-2">
                   <span className={`badge text-xs`} style={{ background: budgetCategory.color + '20', color: budgetCategory.color, border: `1px solid ${budgetCategory.color}40` }}>
@@ -277,8 +279,8 @@ export default function HomePage() {
             {/* Travellers, Days, Start Time */}
             <div className="grid grid-cols-3 gap-3">
               {[
-                { label: 'Travellers', icon: <Users size={14} />, value: travellers, min: 1, max: 20, set: setTravellers, id: 'travellers-input' },
-                { label: 'Days', icon: <Calendar size={14} />, value: days, min: 1, max: 30, set: setDays, id: 'days-input' },
+                { label: t('home.travellers'), icon: <Users size={14} />, value: travellers, min: 1, max: 20, set: setTravellers, id: 'travellers-input' },
+                { label: t('home.days'), icon: <Calendar size={14} />, value: days, min: 1, max: 30, set: setDays, id: 'days-input' },
               ].map(({ label, icon, value, min, max, set, id }) => (
                 <div key={label} className="bg-white/5 rounded-2xl p-3 border border-white/10">
                   <div className="flex items-center gap-1.5 text-accent/60 text-xs mb-2">{icon} {label}</div>
@@ -290,7 +292,7 @@ export default function HomePage() {
                 </div>
               ))}
               <div className="bg-white/5 rounded-2xl p-3 border border-white/10">
-                <div className="flex items-center gap-1.5 text-accent/60 text-xs mb-2"><Clock size={14} /> Start Time</div>
+                <div className="flex items-center gap-1.5 text-accent/60 text-xs mb-2"><Clock size={14} /> {t('home.startTime')}</div>
                 <input type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)}
                   className="w-full bg-transparent text-highlight font-bold text-sm outline-none" id="start-time-input" aria-label="Start time" />
               </div>
@@ -299,7 +301,7 @@ export default function HomePage() {
             {/* Travel Style */}
             <div>
               <label className="text-accent/60 text-xs font-semibold uppercase tracking-wider flex items-center gap-1.5 mb-2">
-                <Compass size={12} /> Travel Style
+                <Compass size={12} /> {t('home.style')}
               </label>
               <div className="flex flex-wrap gap-2">
                 {TRAVEL_STYLES.map(({ id, label, icon }) => (
@@ -319,7 +321,7 @@ export default function HomePage() {
 
             {/* Interests */}
             <div>
-              <label className="text-accent/60 text-xs font-semibold uppercase tracking-wider mb-2 block">Interests</label>
+              <label className="text-accent/60 text-xs font-semibold uppercase tracking-wider mb-2 block">{t('home.interests')}</label>
               <div className="flex flex-wrap gap-2">
                 {INTERESTS.map(({ id, label, icon }) => (
                   <motion.button key={id} whileTap={{ scale: 0.95 }}
@@ -336,7 +338,7 @@ export default function HomePage() {
 
             {/* Transportation */}
             <div>
-              <label className="text-accent/60 text-xs font-semibold uppercase tracking-wider mb-2 block">Transportation</label>
+              <label className="text-accent/60 text-xs font-semibold uppercase tracking-wider mb-2 block">{t('home.transport')}</label>
               <div className="flex flex-wrap gap-2">
                 {TRANSPORT.map(({ id, label, icon }) => (
                   <motion.button key={id} whileTap={{ scale: 0.95 }}
@@ -354,7 +356,7 @@ export default function HomePage() {
             {/* Currency + Language */}
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-accent/60 text-xs font-semibold uppercase tracking-wider mb-2 block">Currency</label>
+                <label className="text-accent/60 text-xs font-semibold uppercase tracking-wider mb-2 block">{t('home.currency')}</label>
                 <select
                   value={currency}
                   onChange={(e) => setCurrency(e.target.value as Currency)}
@@ -367,7 +369,7 @@ export default function HomePage() {
                 </select>
               </div>
               <div>
-                <label className="text-accent/60 text-xs font-semibold uppercase tracking-wider mb-2 block">Language</label>
+                <label className="text-accent/60 text-xs font-semibold uppercase tracking-wider mb-2 block">{t('home.language')}</label>
                 <select
                   value={language}
                   onChange={(e) => setLanguage(e.target.value as Language)}
@@ -404,7 +406,7 @@ export default function HomePage() {
               />
               <span className="relative flex items-center justify-center gap-2">
                 <Sparkles size={20} />
-                Generate My Trip ✨
+                {t('home.generate')}
               </span>
             </motion.button>
           </div>

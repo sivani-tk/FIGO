@@ -1,7 +1,9 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { AnimatePresence, motion } from 'framer-motion'
+import 'leaflet/dist/leaflet.css'
 import './index.css'
 
 import SplashPage from '@/pages/SplashPage'
@@ -29,45 +31,66 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>
 }
 
+const pageTransition = {
+  initial: { opacity: 0, y: 12 },
+  animate: { opacity: 1, y: 0 },
+  exit: { opacity: 0, y: -8 },
+  transition: { duration: 0.3, ease: [0.4, 0, 0.2, 1] },
+}
+
+function PageWrapper({ children }: { children: React.ReactNode }) {
+  return (
+    <motion.div
+      {...pageTransition}
+      className="min-h-screen"
+    >
+      {children}
+    </motion.div>
+  )
+}
+
 function App() {
   const { isAuthenticated } = useAuthStore()
+  const location = useLocation()
 
   return (
-    <Routes>
-      <Route
-        path="/"
-        element={isAuthenticated ? <Navigate to="/home" replace /> : <SplashPage />}
-      />
-      <Route
-        path="/home"
-        element={<ProtectedRoute><HomePage /></ProtectedRoute>}
-      />
-      <Route
-        path="/loading"
-        element={<ProtectedRoute><LoadingPage /></ProtectedRoute>}
-      />
-      <Route
-        path="/result"
-        element={<ProtectedRoute><ResultPage /></ProtectedRoute>}
-      />
-      <Route
-        path="/wishlist"
-        element={<ProtectedRoute><WishlistPage /></ProtectedRoute>}
-      />
-      <Route
-        path="/safety"
-        element={<ProtectedRoute><SafetyPage /></ProtectedRoute>}
-      />
-      <Route
-        path="/settings"
-        element={<ProtectedRoute><SettingsPage /></ProtectedRoute>}
-      />
-      <Route
-        path="/profile"
-        element={<ProtectedRoute><ProfilePage /></ProtectedRoute>}
-      />
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+    <AnimatePresence mode="wait" initial={false}>
+      <Routes location={location} key={location.pathname}>
+        <Route
+          path="/"
+          element={isAuthenticated ? <Navigate to="/home" replace /> : <PageWrapper><SplashPage /></PageWrapper>}
+        />
+        <Route
+          path="/home"
+          element={<ProtectedRoute><PageWrapper><HomePage /></PageWrapper></ProtectedRoute>}
+        />
+        <Route
+          path="/loading"
+          element={<ProtectedRoute><PageWrapper><LoadingPage /></PageWrapper></ProtectedRoute>}
+        />
+        <Route
+          path="/result"
+          element={<ProtectedRoute><PageWrapper><ResultPage /></PageWrapper></ProtectedRoute>}
+        />
+        <Route
+          path="/wishlist"
+          element={<ProtectedRoute><PageWrapper><WishlistPage /></PageWrapper></ProtectedRoute>}
+        />
+        <Route
+          path="/safety"
+          element={<ProtectedRoute><PageWrapper><SafetyPage /></PageWrapper></ProtectedRoute>}
+        />
+        <Route
+          path="/settings"
+          element={<ProtectedRoute><PageWrapper><SettingsPage /></PageWrapper></ProtectedRoute>}
+        />
+        <Route
+          path="/profile"
+          element={<ProtectedRoute><PageWrapper><ProfilePage /></PageWrapper></ProtectedRoute>}
+        />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </AnimatePresence>
   )
 }
 

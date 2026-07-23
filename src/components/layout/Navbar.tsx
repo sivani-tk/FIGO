@@ -7,13 +7,7 @@ import { useWishlistStore } from '@/store/useWishlistStore'
 import { useUIStore } from '@/store/useUIStore'
 import { FigoLogo } from '@/components/ui/FigoLogo'
 import { getInitials } from '@/utils'
-
-const NAV_ITEMS = [
-  { path: '/home', icon: Home, label: 'Home' },
-  { path: '/safety', icon: Shield, label: 'Safety' },
-  { path: '/wishlist', icon: Heart, label: 'Wishlist' },
-  { path: '/settings', icon: Settings, label: 'Settings' },
-]
+import { useTranslation } from '@/i18n/translations'
 
 export function Navbar() {
   const location = useLocation()
@@ -21,7 +15,15 @@ export function Navbar() {
   const { user, logout } = useAuthStore()
   const { items: wishlistItems } = useWishlistStore()
   const { profileOpen, setProfileOpen } = useUIStore()
+  const { t } = useTranslation()
   const dropdownRef = useRef<HTMLDivElement>(null)
+
+  const NAV_ITEMS = [
+    { path: '/home', icon: Home, label: t('nav.home') },
+    { path: '/safety', icon: Shield, label: t('nav.safety') },
+    { path: '/wishlist', icon: Heart, label: t('nav.wishlist') },
+    { path: '/settings', icon: Settings, label: t('nav.settings') },
+  ]
 
   // Close on outside click
   useEffect(() => {
@@ -154,12 +156,12 @@ export function Navbar() {
                 {/* Menu items */}
                 <div className="p-2">
                   {[
-                    { icon: User, label: 'Profile', path: '/profile' },
-                    { icon: Heart, label: 'Wishlist', path: '/wishlist', badge: wishlistItems.length },
-                    { icon: Star, label: 'Saved Trips', path: '/wishlist' },
+                    { icon: User, label: t('nav.profile'), path: '/profile' },
+                    { icon: Heart, label: t('nav.wishlist'), path: '/wishlist', badge: wishlistItems.length },
+                    { icon: Star, label: t('common.savedTrips'), path: '/wishlist' },
                     { icon: Map, label: 'My Map', path: '/safety' },
-                    { icon: Bell, label: 'Notifications', path: '/settings' },
-                    { icon: Settings, label: 'Settings', path: '/settings' },
+                    { icon: Bell, label: t('settings.notifications'), path: '/settings' },
+                    { icon: Settings, label: t('nav.settings'), path: '/settings' },
                   ].map(({ icon: Icon, label, path, badge }) => (
                     <motion.button
                       key={label}
@@ -184,7 +186,7 @@ export function Navbar() {
                     className="w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl text-sm text-red-400 hover:bg-red-500/10 transition-all duration-150"
                   >
                     <LogOut size={15} />
-                    <span>Sign Out</span>
+                    <span>{t('profile.logout')}</span>
                   </motion.button>
                 </div>
               </motion.div>
