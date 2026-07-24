@@ -118,6 +118,12 @@ export async function getWeatherByCity(city: string): Promise<WeatherData> {
 export function getMockWeather(destination?: string): WeatherData {
   const mockMap: Record<string, Partial<WeatherData>> = {
     paris: { temperature: 18, condition: 'Partly cloudy', icon: '⛅', humidity: 70, windSpeed: 12 },
+    calicut: { temperature: 29, condition: 'Partly cloudy', icon: '⛅', humidity: 75, windSpeed: 10 },
+    kozhikode: { temperature: 29, condition: 'Partly cloudy', icon: '⛅', humidity: 75, windSpeed: 10 },
+    goa: { temperature: 31, condition: 'Sunny', icon: '☀️', humidity: 70, windSpeed: 12 },
+    kerala: { temperature: 28, condition: 'Humid & Pleasant', icon: '🌤️', humidity: 80, windSpeed: 9 },
+    delhi: { temperature: 32, condition: 'Clear sky', icon: '☀️', humidity: 45, windSpeed: 11 },
+    jaipur: { temperature: 34, condition: 'Sunny', icon: '☀️', humidity: 35, windSpeed: 14 },
     tokyo: { temperature: 26, condition: 'Clear sky', icon: '☀️', humidity: 65, windSpeed: 8 },
     dubai: { temperature: 38, condition: 'Clear sky', icon: '☀️', humidity: 40, windSpeed: 15 },
     london: { temperature: 14, condition: 'Overcast', icon: '☁️', humidity: 80, windSpeed: 20 },

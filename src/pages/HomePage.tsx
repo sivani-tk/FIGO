@@ -12,19 +12,10 @@ import { useGPS } from '@/hooks/useGPS'
 import { WeatherWidget } from '@/components/weather/WeatherWidget'
 import { DestinationBackground } from '@/components/home/DestinationBackground'
 import { Navbar } from '@/components/layout/Navbar'
-import { generateTrip } from '@/services/ai.service'
+import { generateTrip } from '@/lib/trip.functions'
 import { formatINR, getBudgetCategory } from '@/services/currency.service'
-import { CURRENCIES } from '@/services/currency.service'
 import { useTranslation } from '@/i18n/translations'
-import type { TripSearchParams, TravelStyle, Interest, TransportMode, Currency, Language } from '@/types'
-
-const LANGUAGES: { code: Language; label: string }[] = [
-  { code: 'en', label: '🇬🇧 English' }, { code: 'fr', label: '🇫🇷 Français' },
-  { code: 'de', label: '🇩🇪 Deutsch' }, { code: 'es', label: '🇪🇸 Español' },
-  { code: 'it', label: '🇮🇹 Italiano' }, { code: 'ja', label: '🇯🇵 日本語' },
-  { code: 'zh', label: '🇨🇳 中文' }, { code: 'hi', label: '🇮🇳 हिन्दी' },
-  { code: 'ar', label: '🇦🇪 العربية' }, { code: 'ml', label: '🇮🇳 മലയാളം' },
-]
+import type { TripSearchParams, TravelStyle, Interest, TransportMode } from '@/types'
 
 const TRAVEL_STYLES: { id: TravelStyle; label: string; icon: string }[] = [
   { id: 'solo', label: 'Solo', icon: '🧍' }, { id: 'couple', label: 'Couple', icon: '💑' },
@@ -74,10 +65,9 @@ export default function HomePage() {
   const [travelStyle, setTravelStyle] = useState<TravelStyle>('solo')
   const [interests, setInterests] = useState<Interest[]>(['food', 'culture'])
   const [transportation, setTransportation] = useState<TransportMode[]>(['walking', 'metro'])
-  const [currency, setCurrency] = useState<Currency>(settings.currency)
-  const [language, setLanguage] = useState<Language>(settings.language)
   const [startTime, setStartTime] = useState('08:00')
   const [showSuggestions, setShowSuggestions] = useState(false)
+  const [errorMsg, setErrorMsg] = useState<string | null>(null)
 
   const { weather } = useWeather(destination.length >= 3 ? destination : undefined)
 
@@ -97,12 +87,15 @@ export default function HomePage() {
 
   async function handleGenerate() {
     if (!destination.trim()) return
+    setErrorMsg(null)
 
     const params: TripSearchParams = {
       destination: destination.trim(),
       budgetMin, budgetMax, travellers, days,
       travelStyle, interests, transportation,
-      currency, language, startTime,
+      currency: settings.currency,
+      language: settings.language,
+      startTime,
     }
 
     setSearchParams(params)
@@ -113,7 +106,9 @@ export default function HomePage() {
       const trip = await generateTrip(params)
       setCurrentTrip(trip)
       navigate('/result')
-    } catch {
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Failed to generate itinerary.'
+      setErrorMsg(msg)
       navigate('/home')
     } finally {
       setGenerating(false)
@@ -160,6 +155,26 @@ export default function HomePage() {
             {t('home.subtitle')}
           </p>
         </motion.div>
+
+        {/* Generation Error / Unknown Destination Alert */}
+        {errorMsg && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-4 px-4 py-3.5 rounded-2xl bg-red-500/20 border border-red-500/35 text-red-200 text-sm flex items-center justify-between backdrop-blur-md shadow-lg"
+          >
+            <div className="flex items-center gap-2">
+              <span className="text-base">⚠️</span>
+              <span>{errorMsg}</span>
+            </div>
+            <button
+              onClick={() => setErrorMsg(null)}
+              className="text-red-300 hover:text-white ml-3 text-xs font-bold px-2 py-1 rounded-lg bg-white/10 hover:bg-white/20 transition-all"
+            >
+              ✕
+            </button>
+          </motion.div>
+        )}
 
         {/* Live weather (if destination typed) */}
         {weather && destination.length >= 3 && (
@@ -350,36 +365,6 @@ export default function HomePage() {
                     {icon} {label}
                   </motion.button>
                 ))}
-              </div>
-            </div>
-
-            {/* Currency + Language */}
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="text-accent/60 text-xs font-semibold uppercase tracking-wider mb-2 block">{t('home.currency')}</label>
-                <select
-                  value={currency}
-                  onChange={(e) => setCurrency(e.target.value as Currency)}
-                  className="w-full bg-white/5 border border-white/15 text-highlight rounded-2xl px-4 py-3 text-sm outline-none focus:border-secondary/60 transition-all"
-                  id="currency-select"
-                >
-                  {CURRENCIES.map((c) => (
-                    <option key={c} value={c} className="bg-primary-800">{c}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="text-accent/60 text-xs font-semibold uppercase tracking-wider mb-2 block">{t('home.language')}</label>
-                <select
-                  value={language}
-                  onChange={(e) => setLanguage(e.target.value as Language)}
-                  className="w-full bg-white/5 border border-white/15 text-highlight rounded-2xl px-4 py-3 text-sm outline-none focus:border-secondary/60 transition-all"
-                  id="language-select"
-                >
-                  {LANGUAGES.map(({ code, label }) => (
-                    <option key={code} value={code} className="bg-primary-800">{label}</option>
-                  ))}
-                </select>
               </div>
             </div>
 

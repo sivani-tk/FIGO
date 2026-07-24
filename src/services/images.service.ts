@@ -13,6 +13,21 @@ const DESTINATION_IMAGES: Record<string, string[]> = {
     'https://images.unsplash.com/photo-1499856871958-5b9627545d1a?w=1200&q=80',
     'https://images.unsplash.com/photo-1543349689-9a4d426bee8e?w=1200&q=80',
   ],
+  calicut: [
+    'https://images.unsplash.com/photo-1602216056096-3b40cc0c9944?w=1200&q=80',
+    'https://images.unsplash.com/photo-1590050752117-238cb0fb12b1?w=1200&q=80',
+  ],
+  kozhikode: [
+    'https://images.unsplash.com/photo-1602216056096-3b40cc0c9944?w=1200&q=80',
+  ],
+  goa: [
+    'https://images.unsplash.com/photo-1512343879784-a960bf40e7f2?w=1200&q=80',
+    'https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=1200&q=80',
+  ],
+  kerala: [
+    'https://images.unsplash.com/photo-1602216056096-3b40cc0c9944?w=1200&q=80',
+    'https://images.unsplash.com/photo-1590050752117-238cb0fb12b1?w=1200&q=80',
+  ],
   tokyo: [
     'https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=1200&q=80',
     'https://images.unsplash.com/photo-1536098561742-ca998e48cbcc?w=1200&q=80',
@@ -51,9 +66,6 @@ const DESTINATION_IMAGES: Record<string, string[]> = {
   ],
   mumbai: [
     'https://images.unsplash.com/photo-1529253355930-ddbe423a2ac7?w=1200&q=80',
-  ],
-  goa: [
-    'https://images.unsplash.com/photo-1587922546307-776227941871?w=1200&q=80',
   ],
   default: [
     'https://images.unsplash.com/photo-1488085061387-422e29b40080?w=1200&q=80',

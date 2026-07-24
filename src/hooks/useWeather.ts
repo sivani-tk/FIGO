@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import type { WeatherData } from '@/types'
 import { getWeatherByCity, getWeatherByCoords, getMockWeather } from '@/services/weather.service'
+import { getWeather } from '@/lib/weather.functions'
 
 export function useWeather(destination?: string, lat?: number, lng?: number) {
   const [weather, setWeather] = useState<WeatherData | null>(null)
@@ -21,7 +22,7 @@ export function useWeather(destination?: string, lat?: number, lng?: number) {
         if (lat !== undefined && lng !== undefined) {
           data = await getWeatherByCoords(lat, lng)
         } else if (destination) {
-          data = await getWeatherByCity(destination)
+          data = await getWeather(destination)
         } else {
           data = getMockWeather()
         }

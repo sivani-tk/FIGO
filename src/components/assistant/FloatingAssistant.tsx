@@ -4,6 +4,7 @@ import { Sparkles, X, Send, Bot, User, Loader2 } from 'lucide-react'
 import axios from 'axios'
 import { useUIStore } from '@/store/useUIStore'
 import { useTripStore } from '@/store/useTripStore'
+import { chatWithFigo } from '@/lib/chat.functions'
 import type { ChatMessage } from '@/types'
 
 function uuid() {
@@ -125,26 +126,10 @@ export function FloatingAssistant() {
     let responseText: string
 
     try {
-      // Build conversation history for OpenAI
-      const systemPrompt = `You are FIGO, an expert AI travel assistant. ${
-        currentTrip
-          ? `The user is planning a trip to ${currentTrip.destination}. Budget: ₹${currentTrip.estimatedBudget.toLocaleString()}. Trip summary: ${currentTrip.summary.slice(0, 200)}`
-          : 'Help the user plan their perfect trip.'
-      } Give concise, practical, friendly advice. Use bullet points and emoji for readability. Keep responses under 150 words.`
-
-      const conversationHistory = messages
-        .filter((m) => m.role !== 'assistant' || messages.indexOf(m) > 0)
-        .slice(-8) // Last 8 messages for context
-        .map((m) => ({ role: m.role as 'user' | 'assistant', content: m.content }))
-
-      responseText = await callOpenAI([
-        { role: 'system', content: systemPrompt },
-        ...conversationHistory,
-        { role: 'user', content: text.trim() },
-      ])
+      const allMsgs = [...messages, userMsg]
+      responseText = await chatWithFigo(allMsgs, currentTrip?.destination)
     } catch {
-      // Fall back to simulated delay + mock response
-      await new Promise((r) => setTimeout(r, 900 + Math.random() * 600))
+      await new Promise((r) => setTimeout(r, 600))
       responseText = generateResponse(text, currentTrip?.destination, currentTrip?.estimatedBudget)
     }
 

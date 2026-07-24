@@ -249,7 +249,7 @@ export default function ResultPage() {
 
   async function handleRegenerate() {
     if (!searchParams) return
-    const { generateTrip } = await import('@/services/ai.service')
+    const { generateTrip } = await import('@/lib/trip.functions')
     setGenerating(true)
     navigate('/loading')
     try {
